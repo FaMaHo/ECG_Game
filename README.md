@@ -65,7 +65,7 @@ If Station Osiris falls, the wormhole will remain open, allowing unlimited Xenta
 - **Mouse**: Aim your plasma cannon
 - **Left Click**: Fire plasma bolts
 - **ESC**: Pause/Menu
-- **R**: Restart (when game over)
+- **R**: Refilling the shots
 
 **Survival Tips**:
 - Keep moving to avoid alien swarms
@@ -124,3 +124,4 @@ This game is developed as part of a Computer Graphics project, demonstrating:
 **Defend. Survive. Fight Back.**
 
 *XENOSTRIKE - Coming to full 3D*
+
