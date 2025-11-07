@@ -1,0 +1,106 @@
+# .gitignore for a C++ project (Makefile-based)
+# Place this file at the repo root.
+
+# Build directories
+/build/
+/bin/
+/out/
+/dist/
+cmake-build-*
+build-*
+
+# CMake artefacts (if you use/try CMake)
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+
+# Compiled object files, libraries, executables
+*.o
+*.obj
+*.lo
+*.la
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+
+# Debugging / coverage
+*.gcno
+*.gcda
+*.prof
+*.profdata
+*.pdb
+*.dSYM/
+*.coverage
+coverage/
+*.lcov
+
+# Generated files (from tools, protoc, etc.)
+/generated/
+/gen/
+
+# Temporary files and backups
+*~
+*.swp
+*.swo
+*.tmp
+*.temp
+.#*
+*.bak
+
+# Editor / IDE settings
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-workspace
+*.sublime-project
+
+# Visual Studio
+*.VC.db
+*.VC.opendb
+*.suo
+*.user
+*.userosscache
+*.sln
+*.vcxproj*
+*.vcxproj.filters
+
+# Xcode
+*.xcworkspace/
+*.xcodeproj/
+xcuserdata/
+*.xccheckout
+*.xcuserstate
+
+# Qt Creator
+*.pro.user*
+*.qbs.user*
+*.moc
+
+# Build system and autotools
+Makefile.in
+autom4te.cache/
+config.status
+config.log
+
+# Package managers & dependency caches
+.vcpkg/
+vcpkg_installed/
+.conan/
+.conan2/
+conanbuildinfo.txt
+
+# Misc
+.DS_Store
+Thumbs.db
+desktop.ini
+tags
+TAGS
+cscope.*
+.gdb_history
+*.log
