@@ -8,6 +8,8 @@
 /dist/
 cmake-build-*
 build-*
+cmake-build-*/
+build-*/
 
 # CMake artefacts (if you use/try CMake)
 CMakeFiles/
