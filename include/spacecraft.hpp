@@ -19,8 +19,9 @@ public:
     void update(float deltaTime, Vec2 mousePos);
     bool canShoot() const;
     void shoot();
-    void reload();
+    void reload(int& score);
     void takeDamage(float damage);
     bool isAlive() const;
     float getThrusterIntensity() const;
 };
+

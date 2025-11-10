@@ -37,8 +37,9 @@ void Spacecraft::shoot() {
     ammo--;
 }
 
-void Spacecraft::reload() {
+void Spacecraft::reload(int& score) {
     ammo = maxAmmo;
+    score = std::max(0, score - 50);
 }
 
 void Spacecraft::takeDamage(float damage) {

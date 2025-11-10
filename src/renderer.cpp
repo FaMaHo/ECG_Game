@@ -1,7 +1,9 @@
 #include "../include/renderer.hpp"
 #include "../shader.hpp"
+#include "../include/mothership.hpp"
 #include <cstdlib>
 #include <cmath>
+#include <GLFW/glfw3.h>
 
 Renderer::Renderer() : shaderProgram(0), VAO(0), VBO(0) {}
 
@@ -152,138 +154,96 @@ void Renderer::drawTriangle(Vec2 p1, Vec2 p2, Vec2 p3, Color color) {
     glBindVertexArray(0);
 }
 
-// Visual indicator: Play icon (triangle pointing right)
-void Renderer::drawPlayIcon(Vec2 center, float size, Color color) {
-    Vec2 p1 = center + Vec2(-size * 0.4f, -size * 0.6f);
-    Vec2 p2 = center + Vec2(size * 0.7f, 0);
-    Vec2 p3 = center + Vec2(-size * 0.4f, size * 0.6f);
-    drawTriangle(p1, p2, p3, color);
-}
-
-// Visual wave indicator (circles around a number)
-void Renderer::drawWaveIndicator(int wave) {
-    Vec2 pos(WINDOW_WIDTH - 80, 60);
-
-    // Draw concentric circles
-    drawCircle(pos, 35, Color(1.0f, 0.3f, 0.3f, 0.3f));
-    drawCircle(pos, 25, Color(1.0f, 0.4f, 0.4f, 0.5f));
-
-    // Draw dots to represent wave number (max 10 dots)
-    int dots = std::min(wave, 10);
-    for (int i = 0; i < dots; i++) {
-        float angle = (i * 2.0f * PI / 10.0f) - PI / 2.0f;
-        Vec2 dotPos = pos + Vec2(cos(angle) * 20, sin(angle) * 20);
-        drawCircle(dotPos, 3, Color(1.0f, 0.5f, 0.5f, 1.0f));
-    }
-}
-
-// Visual alien count indicator
-void Renderer::drawAlienCountIndicator(int count) {
-    Vec2 pos(WINDOW_WIDTH - 80, 120);
-
-    // Draw container
-    drawCircle(pos, 30, Color(0.3f, 0.9f, 0.3f, 0.2f));
-
-    // Draw alien icon (simplified)
-    drawCircle(pos, 12, Color(0.3f, 0.9f, 0.3f, 0.8f));
-    drawCircle(pos + Vec2(-4, 3), 3, Color(1.0f, 0.0f, 0.0f, 1.0f));
-    drawCircle(pos + Vec2(4, 3), 3, Color(1.0f, 0.0f, 0.0f, 1.0f));
-
-    // Draw bars to show count (up to 10 bars)
-    int bars = std::min(count / 2, 10);
-    for (int i = 0; i < bars; i++) {
-        float barHeight = 3 + (i * 0.5f);
-        Vec2 barPos = pos + Vec2(-18 + i * 4, -20);
-        drawRectangle(barPos, Vec2(3, barHeight), 0, Color(0.5f, 1.0f, 0.5f, 0.8f));
-    }
-}
-
 void Renderer::drawGameOverScreen(GameState state, int wave, int score) {
     // Dark overlay
     drawRectangle(Vec2(WINDOW_WIDTH/2, WINDOW_HEIGHT/2),
-                 Vec2(WINDOW_WIDTH, WINDOW_HEIGHT), 0, Color(0, 0, 0, 0.8f));
+                 Vec2(WINDOW_WIDTH, WINDOW_HEIGHT), 0, Color(0, 0, 0, 0.85f));
 
     Vec2 center(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
 
-    // Big X icon for game over
-    float size = 80;
-    drawLine(center + Vec2(-size, -size), center + Vec2(size, size), Color(1.0f, 0.2f, 0.2f, 1.0f));
-    drawLine(center + Vec2(size, -size), center + Vec2(-size, size), Color(1.0f, 0.2f, 0.2f, 1.0f));
-    drawCircle(center, size * 1.3f, Color(1.0f, 0.0f, 0.0f, 0.1f));
+    // Simple "GAME OVER" visual
+    drawCircle(center, 100, Color(0.9f, 0.2f, 0.2f, 0.2f));
+    drawCircle(center, 70, Color(1.0f, 0.3f, 0.3f, 0.4f));
+    drawCircle(center, 40, Color(1.0f, 0.4f, 0.4f, 0.6f));
 
-    // Show wave survived with circles
-    Vec2 wavePos = center + Vec2(0, 150);
-    for (int i = 0; i < std::min(wave, 15); i++) {
-        float angle = (i * 2.0f * PI / 15.0f);
-        Vec2 dotPos = wavePos + Vec2(cos(angle) * 40, sin(angle) * 40);
-        drawCircle(dotPos, 4, Color(1.0f, 1.0f, 0.3f, 0.8f));
+    // Wave count - simple bar visualization  
+    Vec2 wavePos = center + Vec2(-150, 100);
+    int waveBars = std::min(wave, 20);
+    for (int i = 0; i < waveBars; i++) {
+        float x = wavePos.x + i * 16;
+        float height = 10 + i * 2;
+        drawRectangle(Vec2(x, wavePos.y), Vec2(12, height), 0, 
+                     Color(1.0f, 0.8f, 0.3f, 0.8f));
     }
-    drawCircle(wavePos, 30, Color(1.0f, 1.0f, 0.3f, 0.3f));
+    // Label icon for waves
+    drawCircle(wavePos + Vec2(-30, 0), 12, Color(1.0f, 0.8f, 0.2f, 0.5f));
 
-    // Show score with stars
-    Vec2 scorePos = center + Vec2(0, -150);
-    int stars = std::min(score / 100, 20);
-    for (int i = 0; i < stars; i++) {
-        float angle = (i * 2.0f * PI / 20.0f);
-        Vec2 starPos = scorePos + Vec2(cos(angle) * 50, sin(angle) * 50);
-        drawCircle(starPos, 3, Color(1.0f, 0.8f, 0.2f, 1.0f));
+    // Score - simple dot visualization
+    Vec2 scorePos = center + Vec2(-150, -100);
+    int scoreDots = std::min(score / 50, 40);
+    for (int i = 0; i < scoreDots; i++) {
+        int row = i / 10;
+        int col = i % 10;
+        Vec2 dotPos = scorePos + Vec2(col * 16, row * 16);
+        drawCircle(dotPos, 5, Color(0.3f, 1.0f, 0.8f, 0.9f));
     }
-    drawCircle(scorePos, 35, Color(1.0f, 0.8f, 0.0f, 0.3f));
+    // Label icon for score
+    drawCircle(scorePos + Vec2(-30, 8), 12, Color(0.3f, 0.9f, 0.7f, 0.5f));
 
-    // Enter key hint (rectangle with arrow pointing down)
-    Vec2 keyPos = center + Vec2(0, -250);
-    drawRectangle(keyPos, Vec2(80, 40), 0, Color(0.3f, 1.0f, 0.3f, 0.5f));
-    drawTriangle(keyPos + Vec2(-15, -5), keyPos + Vec2(0, 10), keyPos + Vec2(15, -5),
-                Color(1.0f, 1.0f, 1.0f, 1.0f));
+    // SPACE to restart hint - simple and clear
+    Vec2 hintPos = center + Vec2(0, -200);
+    float pulseTime = glfwGetTime();
+    float pulse = 0.6f + 0.4f * std::sin(pulseTime * 3.0f);
+    drawRectangle(hintPos, Vec2(200, 50), 0, Color(0.3f, 1.0f, 0.3f, 0.3f * pulse));
+    drawRectangle(hintPos, Vec2(180, 35), 0, Color(0.2f, 0.8f, 0.2f, 0.5f));
+    // SPACE bar icon
+    drawRectangle(hintPos, Vec2(120, 20), 0, Color(0.9f, 0.9f, 0.9f, pulse));
 }
 
 void Renderer::drawMenuScreen(float pulseTime) {
     Vec2 center(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
-    float pulse = 0.7f + 0.3f * std::sin(pulseTime * 3.0f);
+    float pulse = 0.7f + 0.3f * std::sin(pulseTime * 2.5f);
 
-    // Title area - spaceship icon
-    Vec2 titlePos = center + Vec2(0, 150);
-    drawCircle(titlePos, 40, Color(0.3f, 0.6f, 1.0f, 0.5f));
-    drawTriangle(titlePos + Vec2(-20, 20), titlePos + Vec2(0, -30), titlePos + Vec2(20, 20),
-                Color(0.4f, 0.7f, 1.0f, 1.0f));
+    // Title - spaceship icon
+    Vec2 titlePos = center + Vec2(0, 120);
+    drawCircle(titlePos, 50 * pulse, Color(0.3f, 0.6f, 1.0f, 0.3f * pulse));
+    drawCircle(titlePos, 35, Color(0.4f, 0.7f, 1.0f, 0.6f));
+    drawTriangle(titlePos + Vec2(-20, 15), titlePos + Vec2(0, -25), titlePos + Vec2(20, 15),
+                Color(0.5f, 0.8f, 1.0f, 1.0f));
 
-    // Alien icon
-    Vec2 alienPos = center + Vec2(-100, 150);
-    drawCircle(alienPos, 20, Color(0.3f, 0.9f, 0.3f, 0.6f));
-    drawCircle(alienPos + Vec2(-6, 5), 4, Color(1.0f, 0.0f, 0.0f, 1.0f));
-    drawCircle(alienPos + Vec2(6, 5), 4, Color(1.0f, 0.0f, 0.0f, 1.0f));
+    // Simple alien icons
+    Vec2 alien1Pos = center + Vec2(-80, 120);
+    drawCircle(alien1Pos, 18, Color(0.3f, 0.9f, 0.3f, 0.7f));
+    drawCircle(alien1Pos + Vec2(-5, 4), 3, Color(1.0f, 0.0f, 0.0f, 1.0f));
+    drawCircle(alien1Pos + Vec2(5, 4), 3, Color(1.0f, 0.0f, 0.0f, 1.0f));
 
-    Vec2 alienPos2 = center + Vec2(100, 150);
-    drawCircle(alienPos2, 20, Color(0.3f, 0.9f, 0.3f, 0.6f));
-    drawCircle(alienPos2 + Vec2(-6, 5), 4, Color(1.0f, 0.0f, 0.0f, 1.0f));
-    drawCircle(alienPos2 + Vec2(6, 5), 4, Color(1.0f, 0.0f, 0.0f, 1.0f));
+    Vec2 alien2Pos = center + Vec2(80, 120);
+    drawCircle(alien2Pos, 18, Color(0.9f, 0.3f, 0.9f, 0.7f));
+    drawCircle(alien2Pos + Vec2(-5, 4), 3, Color(1.0f, 0.0f, 0.0f, 1.0f));
+    drawCircle(alien2Pos + Vec2(5, 4), 3, Color(1.0f, 0.0f, 0.0f, 1.0f));
 
-    // Start button - pulsing play icon
-    Vec2 buttonPos = center + Vec2(0, -50);
-    drawCircle(buttonPos, 60 * pulse, Color(0.3f, 1.0f, 0.3f, 0.3f * pulse));
-    drawCircle(buttonPos, 45, Color(0.3f, 0.8f, 0.3f, 0.5f));
-    drawPlayIcon(buttonPos, 40, Color(1.0f, 1.0f, 1.0f, pulse));
+    // Start button - pulsing SPACE bar
+    Vec2 buttonPos = center + Vec2(0, -20);
+    drawCircle(buttonPos, 70 * pulse, Color(0.3f, 1.0f, 0.3f, 0.2f * pulse));
+    drawRectangle(buttonPos, Vec2(140, 50), 0, Color(0.3f, 0.8f, 0.3f, 0.6f));
+    drawRectangle(buttonPos, Vec2(120, 35), 0, Color(0.9f, 0.9f, 0.9f, pulse));
 
-    // Control hints - visual icons
-    Vec2 controlY = center + Vec2(0, -180);
-
-    // WASD keys
-    Vec2 keyBase = controlY + Vec2(-120, 0);
-    float keySize = 15;
-    drawRectangle(keyBase + Vec2(0, -keySize), Vec2(keySize * 2, keySize * 2), 0, Color(0.5f, 0.5f, 0.5f, 0.4f));
-    drawTriangle(keyBase + Vec2(-5, -keySize - 5), keyBase + Vec2(0, -keySize - 12), keyBase + Vec2(5, -keySize - 5),
-                Color(0.8f, 0.8f, 0.8f, 0.8f));
-
-    // Mouse icon
-    Vec2 mouseBase = controlY + Vec2(0, 0);
-    drawCircle(mouseBase, 18, Color(0.5f, 0.5f, 0.5f, 0.4f));
-    drawCircle(mouseBase, 12, Color(0.3f, 0.3f, 0.3f, 0.6f));
-    drawLine(mouseBase + Vec2(0, -12), mouseBase + Vec2(0, 0), Color(0.7f, 0.7f, 0.7f, 0.8f));
-
-    // Click icon
-    Vec2 clickBase = controlY + Vec2(120, 0);
-    drawCircle(clickBase, 18, Color(1.0f, 0.5f, 0.2f, 0.4f));
-    drawCircle(clickBase, 8, Color(1.0f, 0.6f, 0.3f, 0.8f));
+    // Control hints - minimal icons
+    Vec2 controlsY = center + Vec2(0, -140);
+    
+    // WASD movement
+    drawCircle(controlsY + Vec2(-100, 0), 25, Color(0.4f, 0.4f, 0.4f, 0.5f));
+    drawRectangle(controlsY + Vec2(-100, 0), Vec2(12, 12), 0, Color(0.7f, 0.7f, 0.7f, 0.8f));
+    drawTriangle(controlsY + Vec2(-100, -8), controlsY + Vec2(-100, -15), 
+                controlsY + Vec2(-95, -8), Color(0.9f, 0.9f, 0.9f, 0.9f));
+    
+    // Mouse
+    drawCircle(controlsY + Vec2(0, 0), 16, Color(0.5f, 0.5f, 0.5f, 0.5f));
+    drawCircle(controlsY + Vec2(0, 0), 10, Color(0.3f, 0.3f, 0.3f, 0.7f));
+    
+    // Click
+    drawCircle(controlsY + Vec2(100, 0), 16, Color(1.0f, 0.5f, 0.2f, 0.5f));
+    drawCircle(controlsY + Vec2(100, 0), 7, Color(1.0f, 0.6f, 0.3f, 0.9f));
 }
 
 void Renderer::drawSpacecraft(const Spacecraft& ship) {
@@ -352,48 +312,132 @@ void Renderer::drawAlien(const Alien& alien) {
     float alpha = alien.spawnAnimation;
 
     Color bodyColor;
-    switch(alien.type) {
-        case AlienType::SCOUT: bodyColor = Color(0.3f, 0.9f, 0.3f, alpha); break;
-        case AlienType::HUNTER: bodyColor = Color(0.9f, 0.3f, 0.9f, alpha); break;
-        case AlienType::BRUTE: bodyColor = Color(0.9f, 0.2f, 0.2f, alpha); break;
+    switch (alien.type) {
+    case AlienType::SCOUT: bodyColor = Color(0.3f, 0.9f, 0.3f, alpha); break;
+    case AlienType::HUNTER: bodyColor = Color(0.9f, 0.3f, 0.9f, alpha); break;
+    case AlienType::BRUTE: bodyColor = Color(0.9f, 0.2f, 0.2f, alpha); break;
     }
 
     float size = alien.getSize();
 
-    // Tentacles
+    // Tentacles (keep them for some alien feel)
     for (const auto& tentacle : alien.tentacles) {
         Vec2 prevPos = alien.position;
         for (int i = 0; i < tentacle.getSegmentCount(); i++) {
             Vec2 offset = tentacle.getSegmentPosition(i, alien.animationTime);
-            Vec2 segPos = alien.position + offset * alien.spawnAnimation;
+            Vec2 segPos = alien.position + offset * alien.spawnAnimation * 0.3f;  // Shorter tentacles
 
-            float segWidth = size * 0.15f * (1.0f - (float)i / tentacle.getSegmentCount());
+            float segWidth = size * 0.08f * (1.0f - (float)i / tentacle.getSegmentCount());
             drawLine(prevPos, segPos, Color(bodyColor.r * 0.7f, bodyColor.g * 0.7f,
-                                           bodyColor.b * 0.7f, alpha * 0.8f));
+                bodyColor.b * 0.7f, alpha * 0.6f));
             drawCircle(segPos, segWidth, Color(bodyColor.r * 0.8f, bodyColor.g * 0.8f,
-                                              bodyColor.b * 0.8f, alpha));
+                bodyColor.b * 0.8f, alpha * 0.7f));
             prevPos = segPos;
         }
     }
 
-    // Body
-    drawCircle(alien.position, size, bodyColor);
+    // Main head - larger oval/egg shape (wider at top)
+    // Draw multiple circles to create oval shape
+    drawCircle(alien.position, size * 1.1f, bodyColor);  // Top wider part
+    drawCircle(alien.position + Vec2(0, -size * 0.3f), size * 0.9f, bodyColor);  // Middle
+    drawCircle(alien.position + Vec2(0, -size * 0.5f), size * 0.7f, bodyColor);  // Bottom (chin)
 
-    // Core
-    float corePulse = 0.7f + 0.3f * std::sin(alien.animationTime * 4.0f);
-    drawCircle(alien.position, size * 0.6f * corePulse,
-              Color(bodyColor.r * 1.2f, bodyColor.g * 1.2f, bodyColor.b * 1.2f, alpha));
-    drawCircle(alien.position, size * 0.3f, Color(1.0f, 0.3f, 0.3f, alpha * corePulse));
+    // Subtle glow/highlight on top of head
+    drawCircle(alien.position + Vec2(-size * 0.3f, size * 0.3f), size * 0.3f,
+        Color(bodyColor.r * 1.3f, bodyColor.g * 1.3f, bodyColor.b * 1.3f, alpha * 0.4f));
 
-    // Eyes
-    Vec2 eyeOffset1(-size * 0.25f, size * 0.2f);
-    Vec2 eyeOffset2(size * 0.25f, size * 0.2f);
-    drawCircle(alien.position + eyeOffset1, size * 0.15f, Color(1.0f, 0.0f, 0.0f, alpha));
-    drawCircle(alien.position + eyeOffset2, size * 0.15f, Color(1.0f, 0.0f, 0.0f, alpha));
-    drawCircle(alien.position + eyeOffset1, size * 0.08f, Color(0.2f, 0.0f, 0.0f, alpha));
-    drawCircle(alien.position + eyeOffset2, size * 0.08f, Color(0.2f, 0.0f, 0.0f, alpha));
+    // Large alien eyes - black and slanted
+    float eyeWidth = size * 0.35f;
+    float eyeHeight = size * 0.55f;
+
+    // Move eyes farther apart
+    Vec2 leftEyeCenter = alien.position + Vec2(-size * 0.50f, size * 0.15f);
+    Vec2 rightEyeCenter = alien.position + Vec2(size * 0.50f, size * 0.15f);
+
+    // Make them more tilted (increase the vertical slant factor)
+    float slantFactor = 0.55f;  // was 0.3f before, now more vertical
+
+    // Left eye: outer corner (left side) up
+    for (int i = 0; i < 5; i++) {
+        float t = i / 4.0f;
+        float offsetX = (t - 0.5f) * eyeWidth * 1.5f;
+        float offsetY = -(t - 0.5f) * eyeHeight * slantFactor;  // steeper upward tilt
+        float circleSize = eyeHeight * 0.5f * (1.0f - std::abs(t - 0.5f) * 0.4f);
+        drawCircle(leftEyeCenter + Vec2(offsetX, offsetY), circleSize,
+            Color(0.0f, 0.0f, 0.0f, alpha));
+    }
+
+    // Right eye: outer corner (right side) up
+    for (int i = 0; i < 5; i++) {
+        float t = i / 4.0f;
+        float offsetX = (t - 0.5f) * eyeWidth * 1.5f;
+        float offsetY = (t - 0.5f) * eyeHeight * slantFactor;  // steeper upward tilt
+        float circleSize = eyeHeight * 0.5f * (1.0f - std::abs(t - 0.5f) * 0.4f);
+        drawCircle(rightEyeCenter + Vec2(offsetX, offsetY), circleSize,
+            Color(0.0f, 0.0f, 0.0f, alpha));
+    }
+    // Tiny white reflections in eyes
+    drawCircle(leftEyeCenter + Vec2(-eyeWidth * 0.3f, eyeHeight * 0.2f), size * 0.08f,
+        Color(1.0f, 1.0f, 1.0f, alpha * 0.8f));
+    drawCircle(rightEyeCenter + Vec2(eyeWidth * 0.3f, eyeHeight * 0.2f), size * 0.08f,
+        Color(1.0f, 1.0f, 1.0f, alpha * 0.8f));
+
+    // Small mouth/nose slits
+    Vec2 mouthPos = alien.position + Vec2(0, -size * 0.35f);
+    drawCircle(mouthPos + Vec2(-size * 0.1f, 0), size * 0.06f,
+        Color(0.0f, 0.0f, 0.0f, alpha * 0.5f));
+    drawCircle(mouthPos + Vec2(size * 0.1f, 0), size * 0.06f,
+        Color(0.0f, 0.0f, 0.0f, alpha * 0.5f));
+
+    // Center nose slit
+    Vec2 mouthCenter = alien.position + Vec2(0, -size * 0.5f);
+    float mouthRadius = size * 0.25f;
+    int mouthSegments = 12;
+
+    // WeÃ¯Â¿Â½ll draw short arc of circles forming an upward curve
+    for (int i = 0; i <= mouthSegments; ++i) {
+        float t = (float)i / mouthSegments;
+        // angle range creates a shallow upward curve
+        float angle = 3.6f + t * (5.8f - 3.6f); // radians ~206Ã¯Â¿Â½ to 332Ã¯Â¿Â½
+        Vec2 pos = mouthCenter + Vec2(cos(angle), sin(angle)) * mouthRadius;
+        drawCircle(pos, size * 0.04f, Color(0.0f, 0.0f, 0.0f, alpha * 0.7f));
+    }
 }
 
+void Renderer::drawMothership(const Mothership& mothership) {
+    if (!mothership.active) return;
+
+    float pulse = 0.9f + 0.1f * std::sin(mothership.animationTime * 3.0f);
+
+    // Main body - triangle shape (smaller)
+    Vec2 top = mothership.position + Vec2(0, mothership.size * 0.5f);
+    Vec2 left = mothership.position + Vec2(-mothership.size * 0.8f, -mothership.size * 0.3f);
+    Vec2 right = mothership.position + Vec2(mothership.size * 0.8f, -mothership.size * 0.3f);
+
+    drawTriangle(top, left, right, Color(0.2f, 0.2f, 0.3f, 0.9f));
+
+    // Glowing core
+    drawCircle(mothership.position, mothership.size * 0.3f * pulse,
+        Color(0.8f, 0.2f, 0.2f, 0.6f));
+    drawCircle(mothership.position, mothership.size * 0.18f,
+        Color(1.0f, 0.3f, 0.3f, 0.9f));
+
+    // Bottom opening (where aliens spawn)
+    Vec2 bottom = mothership.position + Vec2(0, -mothership.size * 0.4f);
+    drawCircle(bottom, mothership.size * 0.25f, Color(0.1f, 0.1f, 0.2f, 0.8f));
+    drawCircle(bottom, mothership.size * 0.15f, Color(0.9f, 0.4f, 0.1f, 0.5f * pulse));
+
+    // Side lights (fewer for smaller size)
+    for (int i = 0; i < 2; i++) {
+        float angle = mothership.animationTime * 2.0f + i * PI;
+        float lightPulse = 0.5f + 0.5f * std::sin(angle);
+        Vec2 lightPos = mothership.position + Vec2(
+            std::cos(angle) * mothership.size * 0.5f,
+            std::sin(angle) * mothership.size * 0.2f
+        );
+        drawCircle(lightPos, 3.0f, Color(0.2f, 0.8f, 1.0f, lightPulse));
+    }
+}
 void Renderer::drawPlasma(const Plasma& plasma) {
     if (!plasma.active) return;
     drawCircle(plasma.position, PLASMA_RADIUS * 2.0f, Color(0.3f, 0.8f, 1.0f, 0.4f));
@@ -466,25 +510,21 @@ void Renderer::drawUI(const GameManager& game) {
         return;
     }
 
-    // In-game UI
+    // In-game UI - only essential info
     drawShieldBar(game.spacecraft);
     drawAmmoCounter(game.spacecraft);
 
-    if (game.waveActive) {
-        drawWaveIndicator(game.wave);
-        drawAlienCountIndicator(game.aliens.size());
-    } else if (game.wave > 0) {
-        // Show "press space to continue" indicator
+    // Show "press SPACE to start wave" indicator only between waves
+    if (!game.waveActive && game.wave >= 0) {
         Vec2 center(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
-        float pulse = 0.6f + 0.4f * std::sin(game.stateTimer * 4.0f);
-        drawCircle(center, 60 * pulse, Color(0.3f, 1.0f, 0.3f, 0.2f * pulse));
-        drawPlayIcon(center, 50, Color(0.3f, 1.0f, 0.3f, pulse));
-    } else {
-        // First wave - show start indicator
-        Vec2 center(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
-        float pulse = 0.6f + 0.4f * std::sin(game.stateTimer * 3.0f);
-        drawCircle(center, 80 * pulse, Color(0.3f, 1.0f, 0.3f, 0.15f * pulse));
-        drawPlayIcon(center, 70, Color(0.5f, 1.0f, 0.5f, pulse));
+        float pulse = 0.6f + 0.4f * std::sin(game.stateTimer * 3.5f);
+        
+        // Pulsing circle
+        drawCircle(center, 70 * pulse, Color(0.3f, 1.0f, 0.3f, 0.2f * pulse));
+        
+        // SPACE bar representation
+        drawRectangle(center, Vec2(100, 40), 0, Color(0.3f, 0.9f, 0.3f, 0.5f));
+        drawRectangle(center, Vec2(80, 28), 0, Color(0.9f, 0.9f, 0.9f, pulse));
     }
 }
 

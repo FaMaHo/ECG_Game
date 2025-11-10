@@ -4,6 +4,7 @@
 #include "plasma.hpp"
 #include "particle.hpp"
 #include "constants.hpp"
+#include "mothership.hpp"
 #include <vector>
 
 class GameManager {
@@ -12,6 +13,7 @@ public:
     std::vector<Plasma> plasmas;
     std::vector<Alien> aliens;
     std::vector<Particle> particles;
+    std::vector<Mothership> motherships; 
     int wave;
     int score;
     int killCount;

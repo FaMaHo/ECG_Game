@@ -1,18 +1,21 @@
 #include "../include/game_manager.hpp"
 #include "../include/collision.hpp"
+#include "../include/mothership.hpp"
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
 
 GameManager::GameManager()
     : wave(0), score(0), killCount(0), waveActive(false),
-      gameState(GameState::MENU), stateTimer(0) {}
+    gameState(GameState::PLAYING), stateTimer(0) {
+}  // Start directly in PLAYING state, skip MENU
 
 void GameManager::reset() {
     spacecraft = Spacecraft();
     plasmas.clear();
     aliens.clear();
     particles.clear();
+    motherships.clear();  // Clear the vector instead
     wave = 0;
     score = 0;
     killCount = 0;
@@ -25,11 +28,11 @@ Vec2 GameManager::getSpawnPosition() {
     int side = rand() % 4;
     float x, y;
 
-    switch(side) {
-        case 0: x = rand() % WINDOW_WIDTH; y = -50; break;
-        case 1: x = rand() % WINDOW_WIDTH; y = WINDOW_HEIGHT + 50; break;
-        case 2: x = -50; y = rand() % WINDOW_HEIGHT; break;
-        case 3: x = WINDOW_WIDTH + 50; y = rand() % WINDOW_HEIGHT; break;
+    switch (side) {
+    case 0: x = rand() % WINDOW_WIDTH; y = -50; break;
+    case 1: x = rand() % WINDOW_WIDTH; y = WINDOW_HEIGHT + 50; break;
+    case 2: x = -50; y = rand() % WINDOW_HEIGHT; break;
+    case 3: x = WINDOW_WIDTH + 50; y = rand() % WINDOW_HEIGHT; break;
     }
 
     return Vec2(x, y);
@@ -78,14 +81,21 @@ void GameManager::startWave() {
 
     std::cout << "Wave " << wave << " - " << alienCount << " aliens incoming!" << std::endl;
 
+    // Determine number of motherships (but ensure we don't have more motherships than aliens)
+    int mothershipCount = std::min(2 + (wave / 2), alienCount);
+
+    // Distribute aliens to motherships
+    std::vector<int> alienDistribution(mothershipCount, 0);
     for (int i = 0; i < alienCount; i++) {
-        Vec2 spawnPos = getSpawnPosition();
+        alienDistribution[i % mothershipCount]++;  // Round-robin distribution
+    }
 
-        AlienType type = AlienType::SCOUT;
-        if (wave > 2 && (rand() % 100) < 35) type = AlienType::HUNTER;
-        if (wave > 4 && (rand() % 100) < 20) type = AlienType::BRUTE;
-
-        aliens.push_back(Alien(spawnPos, type));
+    // Create motherships with their alien counts
+    for (int i = 0; i < mothershipCount; i++) {
+        float x = (WINDOW_WIDTH / (mothershipCount + 1)) * (i + 1);
+        float y = WINDOW_HEIGHT - 80 - (rand() % 40);
+        Vec2 pos(x, y);
+        motherships.push_back(Mothership(pos, alienDistribution[i]));
     }
 }
 
@@ -100,18 +110,51 @@ void GameManager::update(float deltaTime, Vec2 mousePos, bool shooting) {
         for (auto& alien : aliens) {
             if (alien.active) alien.update(deltaTime, spacecraft.position);
         }
+        for (auto& mothership : motherships) {
+            mothership.update(deltaTime);
+        }
         return;
     }
 
     spacecraft.update(deltaTime, mousePos);
 
     if (shooting && spacecraft.canShoot() && spacecraft.isAlive()) {
-        Vec2 direction = (mousePos - spacecraft.position).normalized();
+        Vec2 direction = Vec2(cos(spacecraft.rotation), sin(spacecraft.rotation));
         Vec2 plasmaVel = direction * PLASMA_SPEED * 60.0f;
-        Vec2 muzzlePos = spacecraft.position + direction * SPACECRAFT_RADIUS;
+        Vec2 backDirection = Vec2(cos(spacecraft.rotation + PI), sin(spacecraft.rotation + PI));
+        Vec2 muzzlePos = spacecraft.position + backDirection * SPACECRAFT_RADIUS;
         plasmas.push_back(Plasma(muzzlePos, plasmaVel));
         createPlasmaFlash(muzzlePos);
         spacecraft.shoot();
+    }
+
+    // Update motherships and spawn aliens
+    bool allMothershipsDone = true;
+    for (auto& mothership : motherships) {
+        mothership.update(deltaTime);
+
+        if (mothership.shouldSpawnAlien()) {
+            Vec2 spawnPos = mothership.getSpawnPosition();
+
+            AlienType type = AlienType::SCOUT;
+            if (wave > 2 && (rand() % 100) < 35) type = AlienType::HUNTER;
+            if (wave > 4 && (rand() % 100) < 20) type = AlienType::BRUTE;
+
+            aliens.push_back(Alien(spawnPos, type, wave));
+        }
+
+        if (!mothership.hasFinishedSpawning()) {
+            allMothershipsDone = false;
+        }
+    }
+
+    // Wave complete when all motherships done and no aliens left
+    if (allMothershipsDone && aliens.empty() && waveActive) {
+        motherships.clear();
+        waveActive = false;
+        score += wave * 100;
+        std::cout << "Wave " << wave << " complete! Score: " << score << std::endl;
+        spacecraft.reload(score);
     }
 
     // Check for out of ammo game over
@@ -129,7 +172,11 @@ void GameManager::update(float deltaTime, Vec2 mousePos, bool shooting) {
         if (alienNearby) {
             gameState = GameState::GAME_OVER_AMMO;
             createDeathExplosion();
-            std::cout << "GAME OVER - Out of Ammo!" << std::endl;
+            std::cout << "\n=== GAME OVER - Out of Ammo! ===" << std::endl;
+            std::cout << "Final Score: " << score << std::endl;
+            std::cout << "Waves Survived: " << wave << std::endl;
+            std::cout << "Aliens Eliminated: " << killCount << std::endl;
+            std::cout << "Press SPACE to restart\n" << std::endl;
         }
     }
 
@@ -155,13 +202,6 @@ void GameManager::update(float deltaTime, Vec2 mousePos, bool shooting) {
 
     particles.erase(std::remove_if(particles.begin(), particles.end(),
         [](const Particle& p) { return !p.isAlive(); }), particles.end());
-
-    if (waveActive && aliens.empty()) {
-        waveActive = false;
-        score += wave * 100;
-        std::cout << "Wave " << wave << " complete! Score: " << score << std::endl;
-        spacecraft.reload();
-    }
 }
 
 void GameManager::checkCollisions() {
@@ -172,17 +212,17 @@ void GameManager::checkCollisions() {
             if (!alien.active) continue;
 
             CollisionInfo collision = detectCollision(plasma.position, PLASMA_RADIUS,
-                                                     alien.position, alien.getSize());
+                alien.position, alien.getSize());
 
             if (collision.hasCollision) {
                 plasma.active = false;
                 alien.takeDamage(30);
 
                 Color explosionColor;
-                switch(alien.type) {
-                    case AlienType::SCOUT: explosionColor = Color(0.3f, 0.9f, 0.3f, 1.0f); break;
-                    case AlienType::HUNTER: explosionColor = Color(0.9f, 0.3f, 0.9f, 1.0f); break;
-                    case AlienType::BRUTE: explosionColor = Color(0.9f, 0.2f, 0.2f, 1.0f); break;
+                switch (alien.type) {
+                case AlienType::SCOUT: explosionColor = Color(0.3f, 0.9f, 0.3f, 1.0f); break;
+                case AlienType::HUNTER: explosionColor = Color(0.9f, 0.3f, 0.9f, 1.0f); break;
+                case AlienType::BRUTE: explosionColor = Color(0.9f, 0.2f, 0.2f, 1.0f); break;
                 }
 
                 createAlienExplosion(collision.contactPoint, explosionColor);
@@ -202,7 +242,7 @@ void GameManager::checkCollisions() {
         if (!alien.active) continue;
 
         CollisionInfo collision = detectCollision(spacecraft.position, SPACECRAFT_RADIUS,
-                                                 alien.position, alien.getSize());
+            alien.position, alien.getSize());
 
         if (collision.hasCollision) {
             float damage = 0.8f + (collision.penetrationDepth * 0.1f);
@@ -216,7 +256,36 @@ void GameManager::checkCollisions() {
             if (!spacecraft.isAlive()) {
                 gameState = GameState::GAME_OVER_SHIELD;
                 createDeathExplosion();
-                std::cout << "GAME OVER - Shields Failed!" << std::endl;
+                std::cout << "\n=== GAME OVER - Shields Failed! ===" << std::endl;
+                std::cout << "Final Score: " << score << std::endl;
+                std::cout << "Waves Survived: " << wave << std::endl;
+                std::cout << "Aliens Eliminated: " << killCount << std::endl;
+                std::cout << "Press SPACE to restart\n" << std::endl;
+            }
+        }
+    }
+
+    // Spacecraft-mothership collisions (ADD THIS NEW SECTION)
+    for (auto& mothership : motherships) {
+        if (!mothership.active) continue;
+
+        CollisionInfo collision = detectCollision(spacecraft.position, SPACECRAFT_RADIUS,
+            mothership.position, mothership.size);
+
+        if (collision.hasCollision) {
+            float damage = 2.0f + (collision.penetrationDepth * 0.2f);  // More damage than aliens
+            spacecraft.takeDamage(damage);
+
+            createShieldImpact(collision.contactPoint);
+
+            if (!spacecraft.isAlive()) {
+                gameState = GameState::GAME_OVER_SHIELD;
+                createDeathExplosion();
+                std::cout << "\n=== GAME OVER - Crashed into Mothership! ===" << std::endl;
+                std::cout << "Final Score: " << score << std::endl;
+                std::cout << "Waves Survived: " << wave << std::endl;
+                std::cout << "Aliens Eliminated: " << killCount << std::endl;
+                std::cout << "Press SPACE to restart\n" << std::endl;
             }
         }
     }

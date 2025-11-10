@@ -1,14 +1,32 @@
 #include "../include/alien.hpp"
 #include <algorithm>
 
-Alien::Alien(Vec2 pos, AlienType t)
+Alien::Alien(Vec2 pos, AlienType t, int wave)
     : position(pos), velocity(0, 0), type(t), active(true),
-      spawnAnimation(0), animationTime(0) {
+    spawnAnimation(0), animationTime(0) {
+
+
+    float waveSpeedMultiplier = 1.0f + (wave - 1) * 0.08f;
+
+    switch (type) {
+    case AlienType::SCOUT:
+        health = 35;
+        speed = ALIEN_SPEED * 1.5f * waveSpeedMultiplier;
+        break;
+    case AlienType::HUNTER:
+        health = 25;
+        speed = ALIEN_SPEED * 2.0f * waveSpeedMultiplier;
+        break;
+    case AlienType::BRUTE:
+        health = 70;
+        speed = ALIEN_SPEED * 1.0f * waveSpeedMultiplier;
+        break;
+    }
 
     switch(type) {
-        case AlienType::SCOUT: health = 35; speed = ALIEN_SPEED * 1.3f; break;
-        case AlienType::HUNTER: health = 25; speed = ALIEN_SPEED * 1.7f; break;
-        case AlienType::BRUTE: health = 70; speed = ALIEN_SPEED * 0.8f; break;
+        case AlienType::SCOUT: health = 35; speed = ALIEN_SPEED * 6.0f; break;
+        case AlienType::HUNTER: health = 25; speed = ALIEN_SPEED * 8.0f; break;
+        case AlienType::BRUTE: health = 70; speed = ALIEN_SPEED * 5.0f; break;
     }
 
     // ANIMATION: Initialize tentacles with different angles

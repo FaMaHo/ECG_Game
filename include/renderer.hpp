@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
+#include "mothership.hpp"
 
 class Renderer {
 private:
@@ -22,9 +23,6 @@ private:
     void drawTriangle(Vec2 p1, Vec2 p2, Vec2 p3, Color color);
 
     // Visual UI elements (no text!)
-    void drawPlayIcon(Vec2 center, float size, Color color);
-    void drawWaveIndicator(int wave);
-    void drawAlienCountIndicator(int count);
     void drawGameOverScreen(GameState state, int wave, int score);
     void drawMenuScreen(float pulseTime);
 
@@ -38,6 +36,7 @@ public:
     void drawAlien(const Alien& alien);
     void drawPlasma(const Plasma& plasma);
     void drawParticle(const Particle& particle);
+    void drawMothership(const Mothership& mothership);
     void drawShieldBar(const Spacecraft& ship);
     void drawAmmoCounter(const Spacecraft& ship);
     void drawUI(const GameManager& game);

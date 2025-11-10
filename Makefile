@@ -1,6 +1,6 @@
 # Makefile for XENOSTRIKE
 
-CXX = /usr/bin/clang++
+CXX = c++
 CXXFLAGS = -std=c++17 -Wall -g -Wno-deprecated -fdiagnostics-color=always
 
 PROJECT_ROOT = /Users/fatemehosseini/Documents/Documents - Fateme’s MacBook Pro/ECG/Project
@@ -15,6 +15,7 @@ SOURCES = \
     src/alien.cpp \
     src/collision.cpp \
     src/game_manager.cpp \
+    src/mothership.cpp \
     src/particle.cpp \
     src/plasma.cpp \
     src/renderer.cpp \

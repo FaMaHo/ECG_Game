@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "include/game_manager.hpp"
 #include "include/renderer.hpp"
+#include "include/mothership.hpp"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include "shader.hpp"
@@ -33,20 +34,20 @@ void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_SPACE) {
-        spacePressed = (action == GLFW_PRESS || action == GLFW_REPEAT);
-    }
-    if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+        // SPACE handles starting game, restarting, and starting waves
         if (game.gameState == GameState::GAME_OVER_SHIELD ||
             game.gameState == GameState::GAME_OVER_AMMO ||
             game.gameState == GameState::MENU) {
             game.reset();
             std::cout << "\n=== NEW GAME STARTED ===" << std::endl;
+        } else if (game.gameState == GameState::PLAYING && !game.waveActive) {
+            game.startWave();
         }
     }
     if (key == GLFW_KEY_R && action == GLFW_PRESS && game.gameState == GameState::PLAYING) {
-        game.spacecraft.reload();
-        std::cout << "Reloaded!" << std::endl;
+        game.spacecraft.reload(game.score);
+        std::cout << "Reloaded! (-50 score)" << std::endl;
     }
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -66,7 +67,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT,
-                                          "XENOSTRIKE - Alien Defense", NULL, NULL);
+        "XENOSTRIKE - Alien Defense", NULL, NULL);
     if (!window) {
         std::cerr << "Failed to create window" << std::endl;
         glfwTerminate();
@@ -95,8 +96,7 @@ int main() {
     std::cout << "  Mouse - Aim" << std::endl;
     std::cout << "  Click - Shoot" << std::endl;
     std::cout << "  R - Reload" << std::endl;
-    std::cout << "  SPACE - Start Wave" << std::endl;
-    std::cout << "  ENTER - Start/Retry" << std::endl;
+    std::cout << "  SPACE - Start/Continue" << std::endl;
     std::cout << "  ESC - Quit" << std::endl;
     std::cout << "\nDefend Station Osiris!" << std::endl;
     std::cout << std::endl;
@@ -141,6 +141,10 @@ int main() {
 
         for (const auto& alien : game.aliens) {
             renderer.drawAlien(alien);
+        }
+        // In the render loop, replace the single mothership with:
+        for (const auto& mothership : game.motherships) {
+            renderer.drawMothership(mothership);
         }
 
         for (const auto& plasma : game.plasmas) {

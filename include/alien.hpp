@@ -18,7 +18,7 @@ public:
     float animationTime; 
     std::vector<Tentacle> tentacles;
 
-    Alien(Vec2 pos, AlienType t = AlienType::SCOUT);
+    Alien(Vec2 pos, AlienType t = AlienType::SCOUT, int wave = 1);
 
     void update(float deltaTime, Vec2 playerPos);
     void takeDamage(float damage);
