@@ -20,7 +20,6 @@ Renderer renderer;
 Vec2 mousePosition;
 bool mousePressed = false;
 bool spacePressed = false;
-bool prevSpacePressed = false;
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
@@ -170,4 +169,5 @@ int main() {
     std::cout << "Aliens Eliminated: " << game.killCount << std::endl;
 
     return 0;
+
 }
